@@ -23,7 +23,7 @@
   <property name="src" value="${basedir}/src"/>
   <property name="resources" value="${basedir}/resources"/>
   <property name="test" value="${basedir}/test"/>
-  <property name="idea.home" value="${idea}/unzip"/>
+  <property name="idea.home" value="${idea}/unzip/${idea.unzip.dir}"/>
   <property environment="env"/>
   <property name="tools.jar" value="${env.JAVA_HOME}/lib/tools.jar"/>
   <property name="version" value="${version-id}"/>
@@ -105,9 +105,9 @@
     <delete dir="${idea}/unzip"/>
     <mkdir dir="${idea}/unzip"/>
     <basename property="idea.filename" file="${idea.download.url}"/>
-    <unzip dest="${idea}/unzip">
+    <untar dest="${idea}/unzip" compression="gzip">
       <fileset dir="${idea}" includes="${idea.filename}"/>
-    </unzip>
+    </untar>
   </target>
 
   <target name="dist" depends="dist-src, dist-bin" description="Creates the src and bin distribution files"/>
