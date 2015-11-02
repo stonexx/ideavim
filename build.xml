@@ -23,7 +23,7 @@
   <property name="src" value="${basedir}/src"/>
   <property name="resources" value="${basedir}/resources"/>
   <property name="test" value="${basedir}/test"/>
-  <property name="idea.home" value="${idea}/unzip/${idea.unzip.dir}"/>
+  <property name="idea.home" value="${idea}/unzip"/>
   <property environment="env"/>
   <property name="tools.jar" value="${env.JAVA_HOME}/lib/tools.jar"/>
   <property name="version" value="${version-id}"/>
@@ -105,8 +105,8 @@
     <delete dir="${idea}/unzip"/>
     <mkdir dir="${idea}/unzip"/>
     <basename property="idea.filename" file="${idea.download.url}"/>
-    <untar dest="${idea}/unzip" compression="gzip">
-      <fileset dir="${idea}" includes="${idea.filename}"/>
+    <untar src="${idea}/${idea.filename}" dest="${idea}/unzip" compression="gzip">
+      <cutdirsmapper dirs="1"/>
     </untar>
   </target>
 

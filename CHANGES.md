@@ -3,6 +3,21 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+0.43, 2015-11-02
+----------------
+
+A bugfix release.
+
+* VIM-1039 Fixed running the plugin with Java 6
+M
+0.42, 2015-11-01
+----------------
+
+This release is compatible with IntelliJ 15+ and other IDEs based on the
+IntelliJ platform branch 143+.
+
+* VIM-970 Fixed move commands in read-only files
+
 
 0.41, 2015-06-10
 ----------------
