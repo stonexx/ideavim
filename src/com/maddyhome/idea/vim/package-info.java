@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,6 +89,14 @@
  * |CTRL-W_bar|             TODO
  *
  *
+ * 2.4. Commands starting with 'g'
+ *
+ * tag                      action
+ * ---------------------------------------------------------------------------------------------------------------------
+ *
+ * |g@|                     {@link com.maddyhome.idea.vim.action.change.OperatorAction}
+ *
+ *
  * 3. Visual mode
  *
  * tag                      action
@@ -127,7 +135,7 @@
  * |v_ab|                   VO mapping
  * |v_a(|                   ...
  * |v_a)|                   ...
- * |v_at|                   TODO: VIM-264
+ * |v_at|                   {@link com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockTagAction}
  * |v_a<|                   ...
  * |v_a>|                   ...
  * |v_aB|                   VO mapping
@@ -155,7 +163,7 @@
  * |v_ib|                   VO mapping
  * |v_i(|                   ...
  * |v_i)|                   ...
- * |v_it|                   TODO: VIM-264
+ * |v_it|                   {@link com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockTagAction}
  * |v_i<|                   ...
  * |v_i>|                   ...
  * |v_iB|                   VO mapping

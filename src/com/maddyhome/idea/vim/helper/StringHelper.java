@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -312,6 +312,13 @@ public class StringHelper {
     }
 
     return false;
+  }
+
+  public static boolean isCloseKeyStroke(@NotNull KeyStroke key) {
+    return key.getKeyCode() == VK_ESCAPE ||
+           key.getKeyChar() == VK_ESCAPE ||
+           key.getKeyCode() == VK_C && (key.getModifiers() & CTRL_MASK) != 0 ||
+           key.getKeyCode() == '[' && (key.getModifiers() & CTRL_MASK) != 0;
   }
 
   /**

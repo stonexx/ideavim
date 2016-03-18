@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
               throw new ExException("Unsupported map argument: " + unsupportedArgument);
             }
           }
-          VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), arguments.getToKeys(),
+          VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), arguments.getToKeys(), null,
                                            commandInfo.isRecursive());
           return true;
 

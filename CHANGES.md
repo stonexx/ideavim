@@ -3,13 +3,38 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+
+To Be Released
+--------------
+
+Added `incsearch` option for incremental search. Added support for `it` and
+`at` tag block selection. Added `vim-surround` commands `ys`, `cs`, `ds`,
+`S`. Various bug fixes.
+
+* VIM-769 Added `vim-surround` commands `ys`, `cs`, `ds`, `S`
+* VIM-264 Added tag block selection
+* VIM-271 Added `incsearch` option for showing search results while typing
+* VIM-796 Fixed focus issues with `:action` command
+
+
+0.44, 2015-11-02
+----------------
+
+A bugfix release.
+
+
+* VIM-1040 Fixed typing keys in completion menus and typing with the
+  plugin disabled
+
+
 0.43, 2015-11-02
 ----------------
 
 A bugfix release.
 
 * VIM-1039 Fixed running the plugin with Java 6
-M
+
+
 0.42, 2015-11-01
 ----------------
 

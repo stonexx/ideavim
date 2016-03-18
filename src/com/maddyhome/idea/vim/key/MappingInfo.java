@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 package com.maddyhome.idea.vim.key;
 
 import com.maddyhome.idea.vim.command.MappingMode;
+import com.maddyhome.idea.vim.extension.VimExtensionHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
@@ -32,14 +34,17 @@ import java.util.Set;
 public class MappingInfo implements Comparable<MappingInfo> {
   @NotNull private final Set<MappingMode> myMappingModes;
   @NotNull private final List<KeyStroke> myFromKeys;
-  @NotNull private final List<KeyStroke> myToKeys;
+  @Nullable private final List<KeyStroke> myToKeys;
+  @Nullable private final VimExtensionHandler myExtensionHandler;
   private final boolean myRecursive;
 
   public MappingInfo(@NotNull Set<MappingMode> mappingModes, @NotNull List<KeyStroke> fromKeys,
-                     @NotNull List<KeyStroke> toKeys, boolean recursive) {
+                     @Nullable List<KeyStroke> toKeys, @Nullable VimExtensionHandler extensionHandler,
+                     boolean recursive) {
     myMappingModes = mappingModes;
     myFromKeys = fromKeys;
     myToKeys = toKeys;
+    myExtensionHandler = extensionHandler;
     myRecursive = recursive;
   }
 
@@ -67,9 +72,14 @@ public class MappingInfo implements Comparable<MappingInfo> {
     return myFromKeys;
   }
 
-  @NotNull
+  @Nullable
   public List<KeyStroke> getToKeys() {
     return myToKeys;
+  }
+
+  @Nullable
+  public VimExtensionHandler getExtensionHandler() {
+    return myExtensionHandler;
   }
 
   public boolean isRecursive() {

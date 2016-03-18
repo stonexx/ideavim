@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,12 @@
  */
 package com.maddyhome.idea.vim;
 
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.ide.plugins.PluginManager;
+import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.notification.*;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ex.ApplicationEx;
 import com.intellij.openapi.application.ex.ApplicationManagerEx;
@@ -28,6 +33,8 @@ import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedAction;
+import com.intellij.openapi.editor.event.EditorFactoryAdapter;
+import com.intellij.openapi.editor.event.EditorFactoryEvent;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.ex.KeymapManagerEx;
@@ -37,9 +44,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.project.ProjectManagerAdapter;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.updateSettings.impl.UpdateChecker;
+import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.util.SystemInfo;
+import com.intellij.openapi.vfs.CharsetToolkit;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
+import com.intellij.util.io.HttpRequests;
 import com.maddyhome.idea.vim.ex.CommandParser;
 import com.maddyhome.idea.vim.ex.vimscript.VimScriptParser;
 import com.maddyhome.idea.vim.group.*;
@@ -48,12 +59,16 @@ import com.maddyhome.idea.vim.helper.MacKeyRepeat;
 import com.maddyhome.idea.vim.option.Options;
 import com.maddyhome.idea.vim.ui.VimEmulationConfigurable;
 import org.jdom.Element;
+import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.event.HyperlinkEvent;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This plugin attempts to emulate the key binding and general functionality of Vim and gVim. See the supplied
@@ -73,6 +88,7 @@ import java.io.File;
 public class VimPlugin implements ApplicationComponent, PersistentStateComponent<Element> {
   private static final String IDEAVIM_COMPONENT_NAME = "VimPlugin";
   private static final String IDEAVIM_PLUGIN_ID = "IdeaVIM";
+  private static final String IDEAVIM_STATISTICS_TIMESTAMP_KEY = "ideavim.statistics.timestamp";
   public static final String IDEAVIM_NOTIFICATION_ID = "ideavim";
   public static final String IDEAVIM_STICKY_NOTIFICATION_ID = "ideavim-sticky";
   public static final String IDEAVIM_NOTIFICATION_TITLE = "IdeaVim";
@@ -141,7 +157,7 @@ public class VimPlugin implements ApplicationComponent, PersistentStateComponent
     });
 
     final TypedAction typedAction = EditorActionManager.getInstance().getTypedAction();
-    EventFacade.getInstance().setupTypedActionHandler(new VimTypedActionHandler(typedAction.getHandler()));
+    EventFacade.getInstance().setupTypedActionHandler(new VimTypedActionHandler(typedAction.getRawHandler()));
 
     // Register vim actions in command mode
     RegisterActions.registerActions();
@@ -288,6 +304,17 @@ public class VimPlugin implements ApplicationComponent, PersistentStateComponent
   @NotNull
   public static PluginId getPluginId() {
     return PluginId.getId(IDEAVIM_PLUGIN_ID);
+  }
+
+  @NotNull
+  public static String getVersion() {
+    if (!ApplicationManager.getApplication().isInternal()) {
+      final IdeaPluginDescriptor plugin = PluginManager.getPlugin(getPluginId());
+      return plugin != null ? plugin.getVersion() : "SNAPSHOT";
+    }
+    else {
+      return "INTERNAL";
+    }
   }
 
   public static boolean isEnabled() {
@@ -441,6 +468,8 @@ public class VimPlugin implements ApplicationComponent, PersistentStateComponent
   private void setupListeners() {
     final EventFacade eventFacade = EventFacade.getInstance();
 
+    setupStatisticsReporter(eventFacade);
+
     DocumentManager.getInstance().addDocumentListener(new MarkGroup.MarkUpdater());
     DocumentManager.getInstance().addDocumentListener(new SearchGroup.DocumentSearchListener());
 
@@ -452,5 +481,64 @@ public class VimPlugin implements ApplicationComponent, PersistentStateComponent
         eventFacade.addFileEditorManagerListener(project, new SearchGroup.EditorSelectionCheck());
       }
     });
+  }
+
+  /**
+   * Reports statistics about installed IdeaVim and enabled Vim emulation.
+   *
+   * See https://github.com/go-lang-plugin-org/go-lang-idea-plugin/commit/5182ab4a1d01ad37f6786268a2fe5e908575a217
+   */
+  private void setupStatisticsReporter(@NotNull EventFacade eventFacade) {
+    final Application application = ApplicationManager.getApplication();
+    eventFacade.addEditorFactoryListener(new EditorFactoryAdapter() {
+      @Override
+      public void editorCreated(@NotNull EditorFactoryEvent event) {
+        final PropertiesComponent propertiesComponent = PropertiesComponent.getInstance();
+        final long lastUpdate = propertiesComponent.getOrInitLong(IDEAVIM_STATISTICS_TIMESTAMP_KEY, 0);
+        final boolean outOfDate = lastUpdate == 0 ||
+                                  System.currentTimeMillis() - lastUpdate > TimeUnit.DAYS.toMillis(1);
+        if (outOfDate && isEnabled()) {
+          application.executeOnPooledThread(new Runnable() {
+            @Override
+            public void run() {
+              try {
+                final String buildNumber = ApplicationInfo.getInstance().getBuild().asString();
+                final String pluginId = IDEAVIM_PLUGIN_ID;
+                final String version = URLEncoder.encode(getVersion(), CharsetToolkit.UTF8);
+                final String os = URLEncoder.encode(SystemInfo.OS_NAME + " " + SystemInfo.OS_VERSION,
+                                                    CharsetToolkit.UTF8);
+                final String uid = UpdateChecker.getInstallationUID(PropertiesComponent.getInstance());
+                final String url =
+                  "https://plugins.jetbrains.com/plugins/list" +
+                  "?pluginId=" + pluginId +
+                  "&build=" + buildNumber +
+                  "&pluginVersion=" + version +
+                  "&os=" + os +
+                  "&uuid=" + uid;
+                PropertiesComponent.getInstance().setValue(IDEAVIM_STATISTICS_TIMESTAMP_KEY,
+                                                           String.valueOf(System.currentTimeMillis()));
+                HttpRequests.request(url).connect(new HttpRequests.RequestProcessor<Object>() {
+                    @Override
+                    public Object process(@NotNull HttpRequests.Request request) throws IOException {
+                      LOG.info("Sending statistics: " + url);
+                      try {
+                        JDOMUtil.load(request.getInputStream());
+                      }
+                      catch (JDOMException e) {
+                        LOG.warn(e);
+                      }
+                      return null;
+                    }
+                  }
+                );
+              }
+              catch (IOException e) {
+                LOG.warn(e);
+              }
+            }
+          });
+        }
+      }
+    }, application);
   }
 }

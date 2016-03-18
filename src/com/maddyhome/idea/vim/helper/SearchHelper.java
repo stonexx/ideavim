@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,15 @@
 
 package com.maddyhome.idea.vim.helper;
 
-import com.intellij.lang.*;
+import com.google.common.collect.Lists;
+import com.intellij.lang.CodeDocumentationAwareCommenter;
+import com.intellij.lang.Commenter;
+import com.intellij.lang.Language;
+import com.intellij.lang.LanguageCommenters;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.Pair;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -35,6 +40,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Helper methods for searching text
@@ -344,6 +351,81 @@ public class SearchHelper {
     }
     return -1;
   }
+
+  @Nullable
+  public static TextRange findBlockTagRange(@NotNull Editor editor, boolean isOuter) {
+    final int cursorOffset = editor.getCaretModel().getOffset();
+    int pos = cursorOffset;
+    final CharSequence sequence = editor.getDocument().getCharsSequence();
+    while (true) {
+      final Pair<TextRange, String> closingTagResult = findClosingTag(sequence, pos);
+      if (closingTagResult == null) {
+        return null;
+      }
+      final TextRange closingTagTextRange = closingTagResult.getFirst();
+      final String tagName = closingTagResult.getSecond();
+      final TextRange openingTagTextRange = findOpeningTag(sequence, closingTagTextRange.getStartOffset(), tagName);
+      if (openingTagTextRange != null && openingTagTextRange.getStartOffset() <= cursorOffset) {
+        if (isOuter) {
+          return new TextRange(openingTagTextRange.getStartOffset(),
+                               closingTagTextRange.getEndOffset());
+        }
+        else {
+          return new TextRange(openingTagTextRange.getEndOffset()+1, closingTagTextRange.getStartOffset()-1);
+        }
+      }
+      else {
+        pos = closingTagTextRange.getEndOffset()+1;
+      }
+    }
+  }
+
+  @Nullable
+  private static TextRange findOpeningTag(@NotNull CharSequence sequence, int position, @NotNull String tagName) {
+    final String tagBeginning = "<" + tagName;
+    final Pattern pattern = Pattern.compile(Pattern.quote(tagBeginning), Pattern.CASE_INSENSITIVE);
+    final Matcher matcher = pattern.matcher(sequence.subSequence(0, position));
+    final List<Integer> possibleBeginnings = Lists.newArrayList();
+    while (matcher.find()) {
+      possibleBeginnings.add(matcher.start());
+    }
+    final List<Integer> reversedBeginnings = Lists.reverse(possibleBeginnings);
+    for (int openingTagPos : reversedBeginnings) {
+      final int openingTagEndPos = openingTagPos + tagBeginning.length();
+      final int closeBracketPos = StringUtil.indexOf(sequence, '>', openingTagEndPos);
+      if (closeBracketPos > 0 && (closeBracketPos == openingTagEndPos || sequence.charAt(openingTagEndPos) == ' ')) {
+        return new TextRange(openingTagPos, closeBracketPos);
+      }
+    }
+    return null;
+  }
+
+  @Nullable
+  private static Pair<TextRange, String> findClosingTag(@NotNull CharSequence sequence, int pos) {
+    int closeBracketPos = pos;
+    int openBracketPos;
+    while (closeBracketPos < sequence.length()) {
+      closeBracketPos = StringUtil.indexOf(sequence, '>', closeBracketPos);
+      if (closeBracketPos < 0) {
+        return null;
+      }
+      openBracketPos = closeBracketPos - 1;
+      while (openBracketPos >= 0) {
+        openBracketPos = StringUtil.lastIndexOf(sequence, '<', 0, openBracketPos);
+        if (openBracketPos >= 0 && openBracketPos + 1 < sequence.length() && sequence.charAt(openBracketPos + 1) == '/') {
+          final String tagName = String.valueOf(sequence.subSequence(openBracketPos + "</".length(), closeBracketPos));
+          if (tagName.length() > 0 && tagName.charAt(0) != ' ') {
+            TextRange textRange = new TextRange(openBracketPos, closeBracketPos);
+            return Pair.create(textRange, tagName);
+          }
+        }
+        openBracketPos--;
+      }
+      closeBracketPos++;
+    }
+    return null;
+  }
+
 
   @Nullable
   public static TextRange findBlockQuoteInLineRange(@NotNull Editor editor, char quote, boolean isOuter) {

@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -207,8 +207,7 @@ public class RegisterGroup {
     }
 
     if (start != -1) {
-      VimPlugin.getMark().setMark(editor, '[', start);
-      VimPlugin.getMark().setMark(editor, ']', Math.max(end - 1, 0));
+      VimPlugin.getMark().setChangeMarks(editor, new TextRange(start, Math.max(end - 1, 0)));
     }
 
     return true;

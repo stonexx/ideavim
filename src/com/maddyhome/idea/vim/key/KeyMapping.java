@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.maddyhome.idea.vim.key;
 
 import com.google.common.collect.ImmutableList;
 import com.maddyhome.idea.vim.command.MappingMode;
+import com.maddyhome.idea.vim.extension.VimExtensionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,8 +46,9 @@ public class KeyMapping implements Iterable<List<KeyStroke>> {
   }
 
   public void put(@NotNull Set<MappingMode> mappingModes, @NotNull List<KeyStroke> fromKeys,
-                  @NotNull List<KeyStroke> toKeys, boolean recursive) {
-    myKeys.put(ImmutableList.copyOf(fromKeys), new MappingInfo(mappingModes, fromKeys, toKeys, recursive));
+                  @Nullable List<KeyStroke> toKeys, @Nullable VimExtensionHandler extensionHandler, boolean recursive) {
+    myKeys.put(ImmutableList.copyOf(fromKeys),
+               new MappingInfo(mappingModes, fromKeys, toKeys, extensionHandler, recursive));
     List<KeyStroke> prefix = new ArrayList<KeyStroke>();
     final int prefixLength = fromKeys.size() - 1;
     for (int i = 0; i < prefixLength; i++) {

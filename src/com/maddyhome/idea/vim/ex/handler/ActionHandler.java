@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.ex.CommandHandler;
 import com.maddyhome.idea.vim.ex.ExCommand;
 import com.maddyhome.idea.vim.ex.ExException;
+import com.maddyhome.idea.vim.helper.UiHelper;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -52,7 +53,7 @@ public class ActionHandler extends CommandHandler {
       executeAction(action, context, actionName);
     }
     else {
-      application.invokeLater(new Runnable() {
+      UiHelper.runAfterGotFocus(new Runnable() {
         @Override
         public void run() {
           executeAction(action, context, actionName);

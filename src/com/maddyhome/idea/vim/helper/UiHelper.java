@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2014 The IdeaVim authors
+ * Copyright (C) 2003-2016 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,27 @@ public class UiHelper {
           @Override
           public void run() {
             component.requestFocus();
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Run code after getting focus on request.
+   *
+   * @see #requestFocus
+   */
+  public static void runAfterGotFocus(@NotNull final Runnable runnable) {
+    final Application application = ApplicationManager.getApplication();
+    // XXX: One more invokeLater than in requestFocus()
+    application.invokeLater(new Runnable() {
+      @Override
+      public void run() {
+        application.invokeLater(new Runnable() {
+          @Override
+          public void run() {
+            application.invokeLater(runnable);
           }
         });
       }
