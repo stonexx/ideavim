@@ -1,6 +1,6 @@
 /*
  * IdeaVim - Vim emulator for IDEs based on the IntelliJ platform
- * Copyright (C) 2003-2016 The IdeaVim authors
+ * Copyright (C) 2003-2014 The IdeaVim authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,26 +16,35 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.maddyhome.idea.vim.action.motion.leftright;
+package com.maddyhome.idea.vim.action.change.shift;
 
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.actionSystem.EditorAction;
 import com.maddyhome.idea.vim.VimPlugin;
-import com.maddyhome.idea.vim.action.motion.MotionEditorAction;
 import com.maddyhome.idea.vim.command.Argument;
-import com.maddyhome.idea.vim.handler.MotionEditorActionHandler;
+import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
+ * @author Aleksey Lagoshin
  */
-public class MotionLastNonSpaceAction extends MotionEditorAction {
-  public MotionLastNonSpaceAction() {
+public class AutoIndentMotionAction extends EditorAction {
+  public AutoIndentMotionAction() {
     super(new Handler());
   }
 
-  private static class Handler extends MotionEditorActionHandler {
-    public int getOffset(@NotNull Editor editor, DataContext context, int count, int rawCount, Argument argument) {
-      return VimPlugin.getMotion().moveCaretToLineEndSkipLeadingOffset(editor, count - 1);
+  private static class Handler extends ChangeEditorActionHandler {
+    public boolean execute(@NotNull Editor editor, @NotNull DataContext context, int count, int rawCount,
+                           @Nullable Argument argument) {
+      if (argument != null) {
+        VimPlugin.getChange().autoIndentMotion(editor, context, count, rawCount, argument);
+        return true;
+      }
+      else {
+        return false;
+      }
     }
   }
 }

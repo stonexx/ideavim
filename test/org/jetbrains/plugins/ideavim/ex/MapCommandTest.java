@@ -67,6 +67,8 @@ public class MapCommandTest extends VimTestCase {
     typeText(commandToKeys("imap foo bar"));
     typeText(commandToKeys("imap bar <Esc>"));
     typeText(commandToKeys("imap <C-Down> <C-O>gt"));
+    typeText(commandToKeys("nmap ,f <Plug>Foo"));
+    typeText(commandToKeys("nmap <Plug>Foo iHello<Esc>"));
 
     typeText(commandToKeys("imap"));
     assertExOutput("i  <C-Down>      <C-O>gt\n" +
@@ -74,7 +76,9 @@ public class MapCommandTest extends VimTestCase {
                    "i  foo           bar\n");
 
     typeText(commandToKeys("map"));
-    assertExOutput("   <C-Down>      gt\n");
+    assertExOutput("   <C-Down>      gt\n" +
+                   "n  <Plug>Foo     iHello<Esc>\n" +
+                   "n  ,f            <Plug>Foo\n");
   }
 
   public void testRecursiveMapping() {
@@ -193,15 +197,6 @@ public class MapCommandTest extends VimTestCase {
     myFixture.checkResult("bcd\n");
   }
 
-  // VIM-672 |:map|
-  public void testIgnorePlugMappings() {
-    configureByText("<caret>foo bar\n");
-    typeText(commandToKeys("map w <Plug>abc"));
-    typeText(parseKeys("w"));
-    myFixture.checkResult("foo bar\n");
-    assertOffset(4);
-  }
-
   // VIM-676 |:map|
   public void testBackspaceCharacterInVimRc() {
     configureByText("\n");
@@ -275,5 +270,29 @@ public class MapCommandTest extends VimTestCase {
     typeText(commandToKeys("nmap <Leader>z izzz<Esc>"));
     typeText(parseKeys(",z"));
     myFixture.checkResult("zzz\n");
+  }
+
+  public void testAmbiguousMapping() {
+    configureByText("\n");
+    typeText(commandToKeys("nmap ,f iHello<Esc>"));
+    typeText(commandToKeys("nmap ,f2 iBye<Esc>"));
+    typeText(parseKeys(",fh"));
+    myFixture.checkResult("Hello\n");
+  }
+
+  public void testLongAmbiguousMapping() {
+    configureByText("\n");
+    typeText(commandToKeys("nmap ,foo iHello<Esc>"));
+    typeText(commandToKeys("nmap ,foo2 iBye<Esc>"));
+    typeText(parseKeys(",fooh"));
+    myFixture.checkResult("Hello\n");
+  }
+
+  public void testPlugMapping() {
+    configureByText("\n");
+    typeText(commandToKeys("nmap ,f <Plug>Foo"));
+    typeText(commandToKeys("nmap <Plug>Foo iHello<Esc>"));
+    typeText(parseKeys(",fa!<Esc>"));
+    myFixture.checkResult("Hello!\n");
   }
 }

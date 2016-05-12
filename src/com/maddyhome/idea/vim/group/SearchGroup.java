@@ -33,6 +33,8 @@ import com.intellij.openapi.fileEditor.FileEditorManagerAdapter;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.util.Ref;
+import com.intellij.util.Processor;
 import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.command.Command;
 import com.maddyhome.idea.vim.command.CommandState;
@@ -41,37 +43,24 @@ import com.maddyhome.idea.vim.common.CharacterPosition;
 import com.maddyhome.idea.vim.common.TextRange;
 import com.maddyhome.idea.vim.ex.LineRange;
 import com.maddyhome.idea.vim.helper.*;
-import com.maddyhome.idea.vim.option.OptionChangeEvent;
-import com.maddyhome.idea.vim.option.OptionChangeListener;
+import com.maddyhome.idea.vim.option.ListOption;
 import com.maddyhome.idea.vim.option.Options;
 import com.maddyhome.idea.vim.regexp.CharHelper;
 import com.maddyhome.idea.vim.regexp.CharPointer;
 import com.maddyhome.idea.vim.regexp.CharacterClasses;
 import com.maddyhome.idea.vim.regexp.RegExp;
+import com.maddyhome.idea.vim.ui.ExEntryPanel;
+import com.maddyhome.idea.vim.ui.ModalEntry;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.util.*;
 
-/**
- *
- */
 public class SearchGroup {
-  public SearchGroup() {
-    Options.getInstance().getOption("hlsearch").addOptionChangeListener(new OptionChangeListener() {
-      public void valueChange(OptionChangeEvent event) {
-        showSearchHighlight = Options.getInstance().isSet("hlsearch");
-        updateHighlight();
-      }
-    });
-  }
-
   @Nullable
   public String getLastSearch() {
     return lastSearch;
@@ -91,7 +80,6 @@ public class SearchGroup {
   }
 
   public boolean searchAndReplace(@NotNull Editor editor, @NotNull LineRange range, @NotNull String excmd, String exarg) {
-    boolean res = true;
 
     // Explicitly exit visual mode here, so that visual mode marks don't change when we move the cursor to a match.
     if (CommandState.getInstance(editor).getMode() == CommandState.Mode.VISUAL) {
@@ -221,6 +209,10 @@ public class SearchGroup {
     int line1 = range.getStartLine();
     int line2 = range.getEndLine();
 
+    if (line1 < 0 || line2 < 0) {
+      return false;
+    }
+
     /*
     * check for a trailing count
     */
@@ -263,6 +255,7 @@ public class SearchGroup {
     }
 
     lastSubstitute = pattern;
+    lastSearch = pattern;
     if (pattern != null) {
       setLastPattern(editor, pattern);
     }
@@ -333,6 +326,9 @@ public class SearchGroup {
         }
 
         String match = sp.vim_regsub_multi(regmatch, lnum, sub, 1, false);
+        if (match == null) {
+          return false;
+        }
         //logger.debug("found match[" + spos + "," + epos + "] - replace " + match);
 
         int line = lnum + regmatch.startpos[0].lnum;
@@ -347,27 +343,26 @@ public class SearchGroup {
         if (do_all || line != lastLine) {
           boolean doReplace = true;
           if (do_ask) {
-            //editor.getSelectionModel().setSelection(startoff, endoff);
             RangeHighlighter hl = highlightConfirm(editor, startoff, endoff);
-            int choice = getConfirmChoice(match);
-            //editor.getSelectionModel().removeSelection();
+            MotionGroup.scrollPositionIntoView(editor, editor.offsetToVisualPosition(startoff), true);
+            MotionGroup.moveCaret(editor, startoff);
+            final ReplaceConfirmationChoice choice = confirmChoice(editor, match);
             editor.getMarkupModel().removeHighlighter(hl);
             switch (choice) {
-              case 0: // Yes
+              case SUBSTITUTE_THIS:
                 doReplace = true;
                 break;
-              case 1: // No
+              case SKIP:
                 doReplace = false;
                 break;
-              case 2: // All
+              case SUBSTITUTE_ALL:
                 do_ask = false;
                 break;
-              case JOptionPane.CLOSED_OPTION:
-              case 3: // Quit
+              case QUIT:
                 doReplace = false;
                 got_quit = true;
                 break;
-              case 4: // Last
+              case SUBSTITUTE_LAST:
                 do_all = false;
                 line2 = lnum;
                 doReplace = true;
@@ -417,27 +412,44 @@ public class SearchGroup {
       VimPlugin.showMessage(MessageHelper.message(Msg.e_patnotf2, pattern));
     }
 
-    return res;
+    return true;
   }
 
-  private int getConfirmChoice(String match) {
-    Object[] btns = getConfirmButtons();
-    confirmDlg = new JOptionPane("Replace with " + match + " ?", JOptionPane.QUESTION_MESSAGE,
-                                 JOptionPane.DEFAULT_OPTION, null, btns, btns[0]);
-    JDialog dlg = confirmDlg.createDialog(null, "Confirm Replace");
-    dlg.setVisible(true);
-    Object res = confirmDlg.getValue();
-    confirmDlg = null;
-    if (res == null) {
-      return JOptionPane.CLOSED_OPTION;
-    }
-    for (int i = 0; i < btns.length; i++) {
-      if (btns[i].equals(res)) {
-        return i;
+  @NotNull
+  private static ReplaceConfirmationChoice confirmChoice(@NotNull Editor editor, @NotNull String match) {
+    final Ref<ReplaceConfirmationChoice> result = Ref.create(ReplaceConfirmationChoice.QUIT);
+    // XXX: The Ex entry panel is used only for UI here, its logic might be inappropriate for this method
+    final ExEntryPanel exEntryPanel = ExEntryPanel.getInstance();
+    exEntryPanel.activate(editor, new EditorDataContext(editor), "Replace with " + match + " (y/n/a/q/l)?", "", 1);
+    ModalEntry.activate(new Processor<KeyStroke>() {
+      @Override
+      public boolean process(KeyStroke key) {
+        final ReplaceConfirmationChoice choice;
+        final char c = key.getKeyChar();
+        if (StringHelper.isCloseKeyStroke(key) || c == 'q') {
+          choice = ReplaceConfirmationChoice.QUIT;
+        }
+        else if (c == 'y') {
+          choice = ReplaceConfirmationChoice.SUBSTITUTE_THIS;
+        }
+        else if (c == 'l') {
+          choice = ReplaceConfirmationChoice.SUBSTITUTE_LAST;
+        }
+        else if (c == 'n') {
+          choice = ReplaceConfirmationChoice.SKIP;
+        }
+        else if (c == 'a') {
+          choice = ReplaceConfirmationChoice.SUBSTITUTE_ALL;
+        }
+        else {
+          return true;
+        }
+        result.set(choice);
+        exEntryPanel.deactivate(true);
+        return false;
       }
-    }
-
-    return JOptionPane.CLOSED_OPTION;
+    });
+    return result.get();
   }
 
   private static boolean shouldIgnoreCase(@NotNull String pattern, boolean noSmartCase) {
@@ -445,31 +457,6 @@ public class SearchGroup {
     boolean ic = Options.getInstance().isSet("ignorecase");
 
     return ic && !(sc && StringHelper.containsUpperCase(pattern));
-  }
-
-  private Object[] getConfirmButtons() {
-    if (confirmBtns == null) {
-      confirmBtns = new JButton[]{
-        new JButton("Yes"),
-        new JButton("No"),
-        new JButton("All"),
-        new JButton("Quit"),
-        new JButton("Last")
-      };
-
-      confirmBtns[0].setMnemonic('Y');
-      confirmBtns[1].setMnemonic('N');
-      confirmBtns[2].setMnemonic('A');
-      confirmBtns[3].setMnemonic('Q');
-      confirmBtns[4].setMnemonic('L');
-
-      for (int i = 0; i < confirmBtns.length; i++) {
-        confirmBtns[i].addActionListener(new ButtonActionListener(i));
-      }
-      //confirmBtns = new String[] { "Yes", "No", "All", "Quit", "Last" };
-    }
-
-    return confirmBtns;
   }
 
   public int search(@NotNull Editor editor, @NotNull String command, int count, int flags, boolean moveCursor) {
@@ -573,7 +560,7 @@ public class SearchGroup {
     return findItOffset(editor, editor.getCaretModel().getOffset(), count, -lastDir, false);
   }
 
-  public void updateHighlight() {
+  private void updateHighlight() {
     highlightSearch(false);
   }
 
@@ -659,8 +646,11 @@ public class SearchGroup {
   }
 
   @NotNull
-  public static List<TextRange> findAll(@NotNull Editor editor, @NotNull String pattern, int startLine, int endLine,
-                                        boolean ignoreCase) {
+  private static List<TextRange> findAll(@NotNull Editor editor,
+                                         @NotNull String pattern,
+                                         int startLine,
+                                         int endLine,
+                                         boolean ignoreCase) {
     final List<TextRange> results = Lists.newArrayList();
     final int lineCount = EditorHelper.getLineCount(editor);
     final int actualEndLine = endLine == -1 ? lineCount : endLine;
@@ -1178,7 +1168,9 @@ public class SearchGroup {
     lastDir = Integer.parseInt(dir.getText());
 
     Element show = search.getChild("show-last");
-    showSearchHighlight = Boolean.valueOf(show.getText());
+    final ListOption vimInfo = Options.getInstance().getListOption(Options.VIMINFO);
+    final boolean disableHighlight = vimInfo != null && vimInfo.contains("h");
+    showSearchHighlight = !disableHighlight && Boolean.valueOf(show.getText());
     if (logger.isDebugEnabled()) {
       logger.debug("show=" + show + "(" + show.getText() + ")");
       logger.debug("showSearchHighlight=" + showSearchHighlight);
@@ -1189,20 +1181,6 @@ public class SearchGroup {
   private static String getSafeChildText(@NotNull Element element, @NotNull String name) {
     final Element child = element.getChild(name);
     return child != null ? StringHelper.getSafeXmlText(child) : null;
-  }
-
-  private class ButtonActionListener implements ActionListener {
-    public ButtonActionListener(int i) {
-      index = i;
-    }
-
-    public void actionPerformed(ActionEvent event) {
-      if (confirmDlg != null) {
-        confirmDlg.setValue(confirmBtns[index]);
-      }
-    }
-
-    private final int index;
   }
 
   public static class EditorSelectionCheck extends FileEditorManagerAdapter {
@@ -1267,14 +1245,20 @@ public class SearchGroup {
     }
   }
 
+  private enum ReplaceConfirmationChoice {
+    SUBSTITUTE_THIS,
+    SUBSTITUTE_LAST,
+    SKIP,
+    QUIT,
+    SUBSTITUTE_ALL,
+  }
+
   @Nullable private String lastSearch;
   @Nullable private String lastPattern;
   @Nullable private String lastSubstitute;
   @Nullable private String lastReplace;
   @Nullable private String lastOffset;
   private int lastDir;
-  private JButton[] confirmBtns;
-  @Nullable private JOptionPane confirmDlg = null;
   private boolean showSearchHighlight = Options.getInstance().isSet("hlsearch");
 
   private boolean do_all = false; /* do multiple substitutions per line */

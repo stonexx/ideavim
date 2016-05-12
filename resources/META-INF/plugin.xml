@@ -7,6 +7,7 @@
         <li>Support for <code>incsearch</code> option for showing search results while typing</li>
         <li>Support for <code>it</code> and <code>at</code> tag block selection</li>
         <li>Support for vim-surround commands <code>ys</code>, <code>cs</code>, <code>ds</code>, <code>S</code>, enable it with <code>set surround</code> in your ~/.ideavimrc</li>
+        <li>Support for <code>={motion}</code> formatting command</li>
         <li>Various bug fixes</li>
       </ul>
       <p>0.44:</p>
@@ -56,7 +57,6 @@
       <p>See also the complete <a href="https://github.com/JetBrains/ideavim/blob/master/CHANGES.md">changelog</a>.</p>
     ]]></change-notes>
   <description><![CDATA[
-      <p>Build @VERSION@-@BUILD-NUMBER@</p>
       <p>Vim emulation plug-in for IDEs based on the IntelliJ platform.</p>
       <p>IdeaVim supports many Vim features including normal/insert/visual modes, motion keys, deletion/changing, marks, registers, some Ex commands, Vim regexps, configuration via ~/.ideavimrc, macros, window commands, etc.</p>
       <p>See also:</p>
@@ -298,6 +298,7 @@
 
     <!-- Shift -->
     <action id="VimAutoIndentLines" class="com.maddyhome.idea.vim.action.change.shift.AutoIndentLinesAction" text="Auto Indent Lines"/>
+    <action id="VimAutoIndentMotion" class="com.maddyhome.idea.vim.action.change.shift.AutoIndentMotionAction" text="Auto Indent Lines"/>
     <action id="VimShiftLeftLines" class="com.maddyhome.idea.vim.action.change.shift.ShiftLeftLinesAction" text="Shift Lines Left"/>
     <action id="VimShiftLeftMotion" class="com.maddyhome.idea.vim.action.change.shift.ShiftLeftMotionAction" text="Shift Motion Left"/>
     <action id="VimShiftLeftVisual" class="com.maddyhome.idea.vim.action.change.shift.ShiftLeftVisualAction" text="Shift Visual Left"/>

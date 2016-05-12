@@ -23,7 +23,9 @@ The following `:set` commands can appear in `~/.ideavimrc` or set manually in th
     'sidescroll'     'ss'    minimum number of columns to scroll horizontal
     'sidescrolloff'  'siso'  min. nr. of columns to left and right of cursor
     'smartcase'      'scs'   no ignore case when pattern has uppercase
+    'timeout'        'to'    use timeout for mapped key sequences
     'timeoutlen'     'tm'    time that is waited for a mapped key sequence
     'undolevels'     'ul'    maximum number of changes that can be undone
+    'viminfo'        'vi'    information to remember after restart
     'visualbell'     'vb'    use visual bell instead of beeping
     'wrapscan'       'ws'    searches wrap around the end of the file

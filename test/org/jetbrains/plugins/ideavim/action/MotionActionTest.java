@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.ideavim.action;
 
+import com.intellij.json.JsonFileType;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.VisualPosition;
 import com.maddyhome.idea.vim.VimPlugin;
@@ -873,6 +874,13 @@ public class MotionActionTest extends VimTestCase {
     assertOffset(9);
   }
 
+  // VIM-965 |[m|
+  public void testMethodMovingInNonJavaFile() {
+    myFixture.configureByText(JsonFileType.INSTANCE, "{\"foo\": \"<caret>bar\"}\n");
+    typeText(parseKeys("[m"));
+    myFixture.checkResult("{\"foo\": \"<caret>bar\"}\n");
+  }
+
   // VIM-331 |w|
   public void testNonAsciiLettersInWord() {
     typeTextInFile(parseKeys("w"),
@@ -1046,6 +1054,32 @@ public class MotionActionTest extends VimTestCase {
     typeTextInFile(parseKeys("v", "l", "o", "l", "d"),
                    "<caret>foo\n");
     myFixture.checkResult("fo\n");
+  }
+
+  // VIM-564 |g_|
+  public void testToLastNonBlankCharacterInLine() {
+    doTest(parseKeys("g_"),
+           "one   \n" +
+           "two   \n" +
+           "th<caret>ree  \n" +
+           "four  \n",
+           "one   \n" +
+           "two   \n" +
+           "thre<caret>e  \n" +
+           "four  \n");
+  }
+
+  // |3g_|
+  public void testToLastNonBlankCharacterInLineWithCount3() {
+    doTest(parseKeys("3g_"),
+           "o<caret>ne   \n" +
+           "two   \n" +
+           "three  \n" +
+           "four  \n",
+           "one   \n" +
+           "two   \n" +
+           "thre<caret>e  \n" +
+           "four  \n");
   }
 
   // VIM-646 |gv|

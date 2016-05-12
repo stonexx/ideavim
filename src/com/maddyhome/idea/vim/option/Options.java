@@ -39,6 +39,8 @@ public class Options {
   public static final String NUMBER = "number";
   public static final String CLIPBOARD = "clipboard";
   public static final String INCREMENTAL_SEARCH = "incsearch";
+  public static final String TIMEOUT = "timeout";
+  public static final String VIMINFO = "viminfo";
 
   /**
    * Gets the singleton instance of the options
@@ -467,6 +469,8 @@ public class Options {
     addOption(new ToggleOption(RELATIVE_NUMBER, "rnu", false));
     addOption(new ListOption(CLIPBOARD, "cb", new String[]{"autoselect,exclude:cons\\|linux"}, null));
     addOption(new ToggleOption(INCREMENTAL_SEARCH, "is", false));
+    addOption(new ToggleOption(TIMEOUT, "to", true));
+    addOption(new ListOption(VIMINFO, "vi", new String[]{"'100", "<50", "s10", "h"}, null));
 
     registerExtensionOptions();
   }
