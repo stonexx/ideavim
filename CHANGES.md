@@ -16,6 +16,19 @@ It is important to distinguish EAP from traditional pre-release software.
 Please note that the quality of EAP versions may at times be way below even
 usual beta standards.
 
+To Be Released
+--------------
+
+0.47, 2016-10-19
+----------------
+
+A bugfix release.
+
+Bug fixes:
+
+* VIM-1098 Don't start visual selection when mouse click was actually drag over single character
+* VIM-1190 Fixed exception "Write access is allowed from write-safe contexts only"
+
 
 0.46, 2016-07-07
 ----------------
