@@ -17,13 +17,15 @@ Please note that the quality of EAP versions may at times be way below even
 usual beta standards.
 
 
-To Be Released
---------------
+0.49, 2017-12-12
+----------------
 
-Enabled zero-latency typing for Vim emulation.
+Enabled zero-latency typing for Vim emulation. Added support for `iskeyword` option. Various bug fixes.
 
 
 * [VIM-1254](https://youtrack.jetbrains.com/issue/VIM-1254) Enable zero-latency typing for Vim emulation
+* [VIM-1367](https://youtrack.jetbrains.com/issue/VIM-1367) Support `iskeyword` option
+* [VIM-523](https://youtrack.jetbrains.com/issue/VIM-523) Fixed global mark remembering only the line number
 
 0.48, 2017-01-15
 ----------------
