@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  */
+// TODO: Unused action. Delete it?
 public class FileSaveAction extends EditorAction {
   public FileSaveAction() {
     super(new Handler());
@@ -35,7 +36,7 @@ public class FileSaveAction extends EditorAction {
 
   private static class Handler extends EditorActionHandlerBase {
     protected boolean execute(@NotNull Editor editor, @NotNull DataContext context, @NotNull Command cmd) {
-      VimPlugin.getFile().saveFile(editor, context);
+      VimPlugin.getFile().saveFile(editor);
 
       return true;
     }
