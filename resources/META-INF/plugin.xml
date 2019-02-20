@@ -2,6 +2,16 @@
   <name>IdeaVim</name>
   <id>IdeaVIM</id>
   <change-notes><![CDATA[
+      <p>To be released:</p>
+      <ul>
+        <li>Support :shell command</li>
+        <li>Support :tabnext and :tabprevious commands</li>
+        <li>Various bug fixes</li>
+      </ul>
+      <p>0.51:</p>
+      <ul>
+        <li>Various bug fixes</li>
+      </ul>
       <p>0.50:</p>
       <ul>
         <li>Moved "Vim Emulation" settings into "File | Settings | Editor"</li>
@@ -46,7 +56,7 @@
   <version>SNAPSHOT</version>
   <vendor>JetBrains</vendor>
 
-  <idea-version since-build="181.0"/>
+  <idea-version since-build="183.2940.10"/>
 
   <!-- Mark the plugin as compatible with RubyMine and other products based on the IntelliJ platform -->
   <depends>com.intellij.modules.lang</depends>
@@ -351,6 +361,9 @@
     <action id="VimResetMode" class="com.maddyhome.idea.vim.action.ResetModeAction" text="Reset Mode"/>
     <action id="VimRedo" class="com.maddyhome.idea.vim.action.change.RedoAction" text="Redo"/>
     <action id="VimUndo" class="com.maddyhome.idea.vim.action.change.UndoAction" text="Undo"/>
+
+    <!-- Internal -->
+    <action id="VimInternalAddInlays" class="com.maddyhome.idea.vim.action.internal.AddInlaysAction" text="Vim (internal) add test inlays" internal="true"/>
 
     <!-- Keys -->
     <action id="VimShortcutKeyAction" class="com.maddyhome.idea.vim.action.VimShortcutKeyAction" text="Shortcuts"/>

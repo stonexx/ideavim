@@ -37,7 +37,6 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
-import com.maddyhome.idea.vim.KeyHandler;
 import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.command.CommandState;
 import com.maddyhome.idea.vim.common.TextRange;
@@ -170,20 +169,6 @@ public class FileGroup {
         }
       }
     }
-  }
-
-  /**
-   * Closes all editors except for the current editor.
-   */
-  public void closeAllButCurrent(@NotNull DataContext context) {
-    KeyHandler.executeAction("CloseAllEditorsButCurrent", context);
-  }
-
-  /**
-   * Closes all editors.
-   */
-  public void closeAllFiles(@NotNull DataContext context) {
-    KeyHandler.executeAction("CloseAllEditors", context);
   }
 
   /**

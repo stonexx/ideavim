@@ -23,13 +23,16 @@ import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Editor;
 import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.command.CommandState;
-import com.maddyhome.idea.vim.common.TextRange;
+import com.maddyhome.idea.vim.command.CommandFlags;
 import com.maddyhome.idea.vim.handler.CaretOrder;
 import com.maddyhome.idea.vim.handler.ExecuteMethodNotOverriddenException;
-import com.maddyhome.idea.vim.helper.*;
+import com.maddyhome.idea.vim.helper.EditorHelper;
+import com.maddyhome.idea.vim.helper.MessageHelper;
+import com.maddyhome.idea.vim.helper.Msg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -84,11 +87,21 @@ public abstract class CommandHandler {
    * @param flags Range and Arguments commands
    */
   public CommandHandler(CommandName[] names, int flags) {
-    this(names, flags, 0, false, CaretOrder.NATIVE);
+    this(names, flags, EnumSet.noneOf(CommandFlags.class), false, CaretOrder.NATIVE);
+  }
+
+  /**
+   * Create the handler
+   *
+   * @param flags Range and Arguments commands
+   * @param names A list of names this command answers to
+   */
+  public CommandHandler(int flags, CommandName... names) {
+    this(names, flags, EnumSet.noneOf(CommandFlags.class), false, CaretOrder.NATIVE);
   }
 
   public CommandHandler(CommandName[] names, int flags, boolean runForEachCaret, CaretOrder caretOrder) {
-    this(names, flags, 0, runForEachCaret, caretOrder);
+    this(names, flags, EnumSet.noneOf(CommandFlags.class), runForEachCaret, caretOrder);
   }
 
   /**
@@ -98,7 +111,7 @@ public abstract class CommandHandler {
    * @param argFlags Range and Arguments commands
    * @param optFlags Other command specific flags
    */
-  public CommandHandler(@Nullable CommandName[] names, int argFlags, int optFlags) {
+  public CommandHandler(@Nullable CommandName[] names, int argFlags, EnumSet<CommandFlags> optFlags) {
     this.names = names;
     this.argFlags = argFlags;
     this.optFlags = optFlags;
@@ -109,7 +122,7 @@ public abstract class CommandHandler {
     CommandParser.getInstance().addHandler(this);
   }
 
-  public CommandHandler(@Nullable CommandName[] names, int argFlags, int optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
+  public CommandHandler(@Nullable CommandName[] names, int argFlags, EnumSet<CommandFlags> optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
     this.names = names;
     this.argFlags = argFlags;
     this.optFlags = optFlags;
@@ -128,11 +141,11 @@ public abstract class CommandHandler {
    * @param argFlags Range and Arguments commands
    */
   public CommandHandler(String text, String optional, int argFlags) {
-    this(text, optional, argFlags, 0, false, CaretOrder.NATIVE);
+    this(text, optional, argFlags, EnumSet.noneOf(CommandFlags.class), false, CaretOrder.NATIVE);
   }
 
   public CommandHandler(String text, String optional, int argFlags, boolean runForEachCaret, CaretOrder caretOrder) {
-    this(text, optional, argFlags, 0, runForEachCaret, caretOrder);
+    this(text, optional, argFlags, EnumSet.noneOf(CommandFlags.class), runForEachCaret, caretOrder);
   }
 
   /**
@@ -143,11 +156,11 @@ public abstract class CommandHandler {
    * @param argFlags Range and Arguments commands
    * @param optFlags Other command specific flags
    */
-  public CommandHandler(String text, String optional, int argFlags, int optFlags) {
+  public CommandHandler(String text, String optional, int argFlags, EnumSet<CommandFlags> optFlags) {
     this(new CommandName[]{new CommandName(text, optional)}, argFlags, optFlags, false, CaretOrder.NATIVE);
   }
 
-  public CommandHandler(String text, String optional, int argFlags, int optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
+  public CommandHandler(String text, String optional, int argFlags, EnumSet<CommandFlags> optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
     this(new CommandName[]{new CommandName(text, optional)}, argFlags, optFlags, runForEachCaret, caretOrder);
   }
 
@@ -157,11 +170,11 @@ public abstract class CommandHandler {
    * @param argFlags Range and Arguments commands
    */
   public CommandHandler(int argFlags) {
-    this(argFlags, 0, false, CaretOrder.NATIVE);
+    this(argFlags, EnumSet.noneOf(CommandFlags.class), false, CaretOrder.NATIVE);
   }
 
   public CommandHandler(int argFlags, boolean runForEachCaret, CaretOrder caretOrder) {
-    this(argFlags, 0, runForEachCaret, caretOrder);
+    this(argFlags, EnumSet.noneOf(CommandFlags.class), runForEachCaret, caretOrder);
   }
 
   /**
@@ -170,7 +183,7 @@ public abstract class CommandHandler {
    * @param argFlags Range and Arguments commands
    * @param optFlags Other command specific flags
    */
-  public CommandHandler(int argFlags, int optFlags) {
+  public CommandHandler(int argFlags, EnumSet<CommandFlags> optFlags) {
     this.names = null;
     this.argFlags = argFlags;
     this.optFlags = optFlags;
@@ -179,7 +192,7 @@ public abstract class CommandHandler {
     myCaretOrder = CaretOrder.NATIVE;
   }
 
-  public CommandHandler(int argFlags, int optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
+  public CommandHandler(int argFlags, EnumSet<CommandFlags> optFlags, boolean runForEachCaret, CaretOrder caretOrder) {
     this.names = null;
     this.argFlags = argFlags;
     this.optFlags = optFlags;
@@ -242,7 +255,7 @@ public abstract class CommandHandler {
    *
    * @return The command flags
    */
-  public int getOptFlags() {
+  public EnumSet<CommandFlags> getOptFlags() {
     return optFlags;
   }
 
@@ -339,7 +352,7 @@ public abstract class CommandHandler {
 
   @Nullable protected final CommandName[] names;
   protected final int argFlags;
-  protected final int optFlags;
+  protected final EnumSet<CommandFlags> optFlags;
 
   private final boolean myRunForEachCaret;
   private final CaretOrder myCaretOrder;
